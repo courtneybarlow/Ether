@@ -1,0 +1,53 @@
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import { readdirSync, readFileSync } from 'node:fs';
+import { start, log } from './server.mjs';
+const SP = process.env.SEED_DIR;
+const seed = readdirSync(SP).map(f => ({ path: 'items/' + f.replace(/\.json$/, ''), data: JSON.parse(readFileSync(SP + '/' + f, 'utf8')) }));
+seed.push({ path: 'brief/today', data: { date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date()), affirmation: 'I choose the next right thing.', weather: { now: '72°', summary: 'Mostly sunny', high: '80°', low: '48°' } } });
+const srv = await start(5179);
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1180, height: 820 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+await p.addInitScript(s => { window.__SEED = s; }, seed);
+await p.goto('http://localhost:5179/');
+await p.waitForSelector('#ether-login input[name=email]');
+await p.fill('#ether-login input[name=email]', 'courtney@example.com');
+await p.fill('#ether-login input[name=password]', 'pw');
+await p.click('#ether-login button');
+await p.waitForTimeout(2500);
+await p.screenshot({ path: process.env.OUT + '/app-home.png' });
+const r = {};
+r.nine = await p.textContent('#today-meta');
+r.timelineEvents = await p.$$eval('.tl-ev', els => els.map(e => e.getAttribute('data-tip')));
+r.nextup = await p.textContent('#nextup');
+r.weather = await p.textContent('#weather');
+// check off a task from the card
+await p.evaluate(() => window.etherHooks.openDrawer('tasks'));
+await p.waitForTimeout(300);
+const firstBox = await p.$('#must .box');
+const id = firstBox && await firstBox.getAttribute('data-id');
+if (firstBox) await firstBox.click();
+await p.waitForTimeout(600);
+r.checkedDone = await p.evaluate(id => window.__rows.get('items/' + id).data.done, id);
+await p.keyboard.press('Escape');
+// talk: add a task
+await p.fill('#ask', 'remind me to buy candles');
+await p.press('#ask', 'Enter');
+await p.waitForTimeout(1500);
+r.caption = await p.textContent('#caption');
+r.added = await p.evaluate(() => [...window.__rows.values()].filter(x => x.data.title === 'Test task from voice').length);
+// play music via tools loop
+await p.fill('#ask', 'play golden hour');
+await p.press('#ask', 'Enter');
+await p.waitForTimeout(1500);
+r.caption2 = await p.textContent('#caption');
+r.toolCalls = log.filter(l => l[0] === 'tools').map(l => l[1] + '/' + l[2]);
+// settings drawer
+await p.evaluate(() => window.etherHooks.openDrawer('voice'));
+await p.waitForTimeout(500);
+await p.screenshot({ path: process.env.OUT + '/app-settings.png' });
+r.conn = await p.$$eval('#conn li', els => els.map(e => e.textContent));
+console.log(JSON.stringify(r, null, 1));
+console.log('ERRORS', errs);
+await b.close(); srv.close();

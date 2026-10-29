@@ -1,0 +1,24 @@
+/* Additions for the standalone app (sign-in, listening state, settings rows). */
+html, body { background: #05070f; }
+body { padding-top: env(safe-area-inset-top, 0px); }
+#ether-login { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(80% 60% at 50% 30%, rgba(126,232,255,.10), transparent 70%), #05070f; color: #e8f1ff; font-family: Jost, system-ui, sans-serif; padding: 24px; }
+#ether-login form { width: min(360px, 100%); display: grid; gap: 14px; justify-items: stretch; text-align: center; }
+#ether-login svg { width: 54px; height: 54px; color: #7ee8ff; justify-self: center; filter: drop-shadow(0 0 10px rgba(126,232,255,.6)); }
+#ether-login h1 { margin: 0 0 8px; font-weight: 300; letter-spacing: .5em; text-transform: uppercase; font-size: 18px; }
+#ether-login label { display: grid; gap: 6px; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: #8aa0c0; }
+#ether-login input { font: 16px Jost, system-ui, sans-serif; color: #e8f1ff; background: rgba(8,13,26,.9); border: 1px solid rgba(140,200,255,.22); border-radius: 12px; padding: 12px 14px; letter-spacing: 0; text-transform: none; }
+#ether-login input:focus { outline: 2px solid #7ee8ff; outline-offset: 1px; }
+#ether-login button { margin-top: 6px; font: 600 15px Jost, system-ui, sans-serif; color: #021018; background: radial-gradient(circle at 35% 30%, #fff, #7ee8ff 55%, #3a6fd8); border: 0; border-radius: 999px; padding: 13px 18px; cursor: pointer; box-shadow: 0 0 22px rgba(126,232,255,.45); }
+#ether-login .err { min-height: 1.3em; margin: 0; color: #ffb46b; font-size: 13px; }
+
+/* Listening: the mic button breathes with your voice and the core glows */
+body.listening .talk { box-shadow: 0 0 calc(18px + var(--lvl, 0) * 34px) rgba(126,232,255,.85); transform: scale(calc(1 + var(--lvl, 0) * .12)); transition: transform .08s, box-shadow .08s; }
+body.listening .core-svg .nucleus { filter: drop-shadow(0 0 18px rgba(126,232,255,.9)); }
+body.listening #ask::placeholder { color: #7ee8ff; }
+
+/* Settings */
+.conn { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.conn li { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 6px 0; border-bottom: 1px dashed rgba(140,200,255,.08); }
+.conn b { font-weight: 400; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.conn b.ok { color: #6be3a4; } .conn b.off { color: #8aa0c0; }
+button.playlink { border: 0; cursor: pointer; font-family: inherit; }

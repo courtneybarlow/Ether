@@ -1,0 +1,21 @@
+{
+  "name": "ether",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Ether: Courtney's personal command center",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "ical.js": "^2.2.1",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "onnxruntime-web": "1.23.2",
+    "openwakeword-wasm-browser": "0.1.1"
+  }
+}
