@@ -18,7 +18,7 @@ create index if not exists docs_parent_idx on public.docs (owner, parent);
 alter table public.docs enable row level security;
 drop policy if exists docs_owner on public.docs;
 create policy docs_owner on public.docs for all to authenticated
-  using (owner = auth.uid()) with check (owner = auth.uid());
+  using (owner = (select auth.uid())) with check (owner = (select auth.uid()));
 
 -- Live updates to the app (deletes carry the full old row so the app knows which list changed).
 alter table public.docs replica identity full;
@@ -29,7 +29,7 @@ exception when duplicate_object then null; end $$;
 -- Merge fields into an existing document (like "update"): fails if the document doesn't exist.
 -- A field set to {"__delete__": true} is removed.
 create or replace function public.doc_merge(p_path text, p_patch jsonb)
-returns jsonb language plpgsql security invoker as $$
+returns jsonb language plpgsql security invoker set search_path = '' as $$
 declare
   cur jsonb; k text; v jsonb;
 begin
@@ -41,6 +41,8 @@ begin
   update public.docs set data = cur, updated_at = now() where owner = auth.uid() and path = p_path;
   return cur;
 end $$;
+revoke execute on function public.doc_merge(text, jsonb) from anon, public;
+grant execute on function public.doc_merge(text, jsonb) to authenticated;
 
 -- 2. Server-only storage (Spotify login, notification keys, job runs). The app itself can't read it.
 create table if not exists public.vault (
@@ -60,4 +62,9 @@ create table if not exists public.push_subs (
   device     text,
   created_at timestamptz not null default now()
 );
+create index if not exists push_subs_owner_idx on public.push_subs (owner);
 alter table public.push_subs enable row level security;
+
+-- 4. Scheduler extensions (the clock itself is in schedule.sql).
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
