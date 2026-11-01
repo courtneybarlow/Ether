@@ -67,4 +67,4 @@ alter table public.push_subs enable row level security;
 
 -- 4. Scheduler extensions (the clock itself is in schedule.sql).
 create extension if not exists pg_cron;
-create extension if not exists pg_net;
+create extension if not exists pg_net with schema extensions;
