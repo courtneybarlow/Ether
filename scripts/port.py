@@ -52,7 +52,7 @@ rep('''    const fallback=()=>{ if(token===speakToken) speakTimer=setTimeout(nex
     try{''', '''    const fallback=()=>{ if(token===speakToken) speakTimer=setTimeout(next,Math.max(2000,line.length*55)); };
     if(window.EtherVoice&&EtherVoice.available()){
       if(lines[i]) EtherVoice.prefetch(lines[i]);
-      EtherVoice.speak(line).then(()=>{ if(token===speakToken) speakTimer=setTimeout(next,160); }).catch(()=>deviceSpeak());
+      EtherVoice.speak(line).then(()=>{ if(token===speakToken) speakTimer=setTimeout(next,160); }).catch(err=>{ const c=err&&err.code; if(c==='voice_no_credit'||c==='voice_key_invalid'){ setCaption(c==='voice_no_credit'?'My voice service (OpenAI) is out of credit, so I can’t speak right now. Add credit at platform.openai.com → Billing.':'My voice service key isn’t working. Check OPENAI_API_KEY in Vercel.'); done(); return; } deviceSpeak(); });
       return;
     }
     deviceSpeak();

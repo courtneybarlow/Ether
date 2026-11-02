@@ -27,7 +27,7 @@
     } catch (e) {
       document.body.classList.remove('listening');
       const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
-      H().setCaption && H().setCaption(denied ? 'I need microphone access. Allow it for Ether in Settings, then tap the mic again.' : 'The mic didn’t work just then. Try again, or type.');
+      H().setCaption && H().setCaption(denied ? 'I need microphone access. Allow it for Ether in Settings, then tap the mic again.' : (e && e.code) === 'voice_no_credit' ? 'I heard you, but my voice service (OpenAI) is out of credit. Add credit at platform.openai.com → Billing, then try again.' : (e && e.code) === 'voice_key_invalid' ? 'My voice service key isn’t working. Check OPENAI_API_KEY in Vercel.' : 'The mic didn’t work just then: ' + ((e && (e.code || e.message)) || 'unknown') + '. Try again, or type.');
     } finally {
       listening = false;
       talk.style.removeProperty('--lvl');

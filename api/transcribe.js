@@ -18,6 +18,6 @@ export default handle(async (req, res) => {
   form.append('prompt', 'Courtney talking to Ether, her assistant. Names: Seven Wellness Club (SWC), November Social, Alterra, 85SIXTY, Solidcore, Sweat House, Planable, Nashville.');
   const r = await fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new HttpError(502, 'transcribe_error', (j.error && j.error.message) || String(r.status));
+  if (!r.ok) { const m = (j.error && j.error.message) || String(r.status); throw new HttpError(502, /insufficient_quota|no credits/i.test(JSON.stringify(j)) ? 'voice_no_credit' : r.status === 401 ? 'voice_key_invalid' : 'transcribe_error', m); }
   send(res, 200, { text: String(j.text || '').trim() });
 });

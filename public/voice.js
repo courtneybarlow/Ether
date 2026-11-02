@@ -6,6 +6,9 @@
   'use strict';
   const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
   let ctx = null;
+  // Play through the speaker even when the iPad is on silent (Safari 17+).
+  function session(t) { try { if (navigator.audioSession && navigator.audioSession.type !== t) navigator.audioSession.type = t; } catch (e) {} }
+  window.etherAudioSession = session;
   function audioCtx() {
     if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; ctx = new AC(); }
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -44,7 +47,7 @@
       const key = this.voice + '|' + this.speed + '|' + text;
       if (cache.has(key)) return cache.get(key);
       const p = window.etherApi('/api/tts', { json: { text, voice: this.voice, speed: this.speed }, raw: true })
-        .then(r => { if (!r.ok) throw new Error('tts ' + r.status); return r.arrayBuffer(); })
+        .then(async r => { if (!r.ok) { let j = {}; try { j = await r.json(); } catch (e) {} const err = new Error(j.error || ('tts ' + r.status)); err.code = j.code || 'voice_error'; throw err; } return r.arrayBuffer(); })
         .then(buf => new Promise((res, rej) => audioCtx().decodeAudioData(buf, res, rej)));
       p.catch(() => cache.delete(key));
       cache.set(key, p);
@@ -54,6 +57,7 @@
     prefetch(text) { if (this.available() && text) this.fetch(text).catch(() => {}); },
     async speak(text) {
       const my = ++gen;
+      session('playback');
       const buf = await this.fetch(text);
       if (my !== gen) return;
       await new Promise(resolve => {
@@ -74,6 +78,7 @@
     cancel() { if (rec) rec.abort(); },
     async listen({ onLevel, maxMs = 15000 } = {}) {
       if (rec) rec.abort();
+      session('play-and-record');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       const mime = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || '';
       const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
@@ -100,7 +105,7 @@
         raf = requestAnimationFrame(loop);
       };
       mr.start(250); chime('up'); loop();
-      await done; cleanup();
+      await done; cleanup(); session('playback');
       if (aborted || !heard) { chime('down'); return ''; }
       chime('down');
       const blob = new Blob(chunks, { type: mr.mimeType || mime || 'audio/mp4' });

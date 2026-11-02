@@ -16,7 +16,7 @@ export default handle(async (req, res) => {
   const payload = { model, voice: String(b.voice || env('ETHER_VOICE', 'marin')), input: text, response_format: 'mp3', speed: Math.max(0.7, Math.min(1.4, Number(b.speed) || 1)) };
   if (/gpt-/.test(model)) payload.instructions = STYLE;
   const r = await fetch('https://api.openai.com/v1/audio/speech', { method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if (!r.ok) { const t = await r.text(); throw new HttpError(502, r.status === 429 ? 'rate_limited' : 'voice_error', t.slice(0, 300)); }
+  if (!r.ok) { const t = await r.text(); throw new HttpError(502, /insufficient_quota|no credits/i.test(t) ? 'voice_no_credit' : r.status === 429 ? 'rate_limited' : r.status === 401 ? 'voice_key_invalid' : 'voice_error', t.slice(0, 300)); }
   res.statusCode = 200;
   res.setHeader('Content-Type', 'audio/mpeg');
   res.setHeader('Cache-Control', 'no-store');
