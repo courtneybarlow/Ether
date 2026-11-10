@@ -497,7 +497,28 @@ body.night #night{display:grid;min-height:90vh;align-content:center;justify-item
   body.speaking .wave i:nth-child(2n){animation-delay:.15s} body.speaking .wave i:nth-child(3n){animation-delay:.3s} body.speaking .wave i:nth-child(5n){animation-delay:.45s}
   body.thinking .breath{animation-duration:1.4s}
   body.levelup .core-svg{animation:lvl 1.2s ease-out}
-  body.supernova .core-svg{animation:nova 1.9s cubic-bezier(.2,.8,.2,1)}
+  body.novacharge .core-svg{animation:implode .62s cubic-bezier(.6,0,.9,.4) forwards}
+  @keyframes implode{0%{transform:scale(1);filter:none}100%{transform:scale(.8);filter:drop-shadow(0 0 26px var(--ice)) brightness(1.5)}}
+  body.supernova .core-svg{animation:nova 2.1s cubic-bezier(.2,.8,.2,1)}
+  body.quake .duo,body.quake .tlwrap{animation:quake .6s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes quake{10%,90%{transform:translate(-2px,1px)}20%,80%{transform:translate(4px,-2px)}30%,50%,70%{transform:translate(-7px,3px)}40%,60%{transform:translate(7px,-3px)}}
+  .nova-dim{position:fixed;inset:0;z-index:57;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(2,4,10,.25),rgba(2,4,10,.75));animation:ndim 4.4s ease forwards}
+  @keyframes ndim{0%{opacity:0}13%{opacity:1}18%{opacity:.3}30%{opacity:.7}75%{opacity:.7}100%{opacity:0}}
+  .nova-flash{position:fixed;inset:0;z-index:62;pointer-events:none;mix-blend-mode:screen;animation:nflash 1.15s ease-out forwards}
+  @keyframes nflash{0%{opacity:0}8%{opacity:1}100%{opacity:0}}
+  .nova-rays{position:fixed;z-index:58;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%) scale(.3) rotate(0);mix-blend-mode:screen;background:repeating-conic-gradient(from 0deg,rgba(126,232,255,0) 0deg 7deg,rgba(190,240,255,.30) 8deg 9.5deg,rgba(126,232,255,0) 10.5deg 15deg);-webkit-mask:radial-gradient(circle,#000 18%,transparent 68%);mask:radial-gradient(circle,#000 18%,transparent 68%);animation:nrays 3s cubic-bezier(.15,.7,.3,1) forwards}
+  @keyframes nrays{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15) rotate(40deg)}}
+  .burst.mega{z-index:63}
+  .burst.mega i{animation-name:pop;animation-timing-function:cubic-bezier(.1,.75,.25,1)}
+  .nova-banner{position:fixed;left:50%;top:46%;z-index:64;pointer-events:none;display:grid;justify-items:center;gap:6px;text-align:center;color:#fff;transform:translate(-50%,-50%);animation:nbanner 3.6s cubic-bezier(.2,.8,.2,1) forwards}
+  .nova-banner::before{content:"";position:absolute;z-index:-1;inset:-60px -12vw;background:radial-gradient(closest-side,rgba(3,6,16,.82),rgba(3,6,16,.5) 55%,transparent);border-radius:50%}
+  .nova-banner small{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.6em;text-transform:uppercase;color:var(--ice)}
+  .nova-banner b{font-family:var(--f-display);font-weight:200;font-size:clamp(44px,8vw,104px);line-height:1;text-transform:uppercase;letter-spacing:.12em;text-shadow:0 0 24px rgba(126,232,255,.9),0 0 60px rgba(165,151,255,.6);animation:nspread 3.6s cubic-bezier(.2,.8,.2,1) forwards;white-space:nowrap}
+  .nova-banner i{font-style:normal;font-family:var(--f-display);font-weight:300;font-size:clamp(14px,1.6vw,18px);letter-spacing:.08em;color:#e8f1ff;opacity:.9}
+  @keyframes nbanner{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}14%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}22%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.06)}}
+  @keyframes nspread{0%{letter-spacing:.02em}100%{letter-spacing:.2em}}
+  .nova-fall{position:fixed;top:-16px;z-index:60;pointer-events:none;background:var(--c,#fff);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 5px var(--c,#fff));opacity:0;animation:nfall 3s linear forwards}
+  @keyframes nfall{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:1}50%{opacity:.4}60%{opacity:1}100%{opacity:0;transform:translate(var(--dx),105vh) rotate(260deg)}}
   @keyframes nova{0%{transform:scale(1);filter:none}16%{transform:scale(1.2);filter:drop-shadow(0 0 50px #fff) brightness(1.7)}42%{transform:scale(.95);filter:drop-shadow(0 0 34px var(--ice)) brightness(1.2)}100%{transform:scale(1);filter:none}}
   .shock{position:fixed;z-index:59;pointer-events:none;border-radius:50%;border:2px solid var(--ice);box-shadow:0 0 30px var(--ice),inset 0 0 24px rgba(126,232,255,.45);transform:translate(-50%,-50%) scale(.4);opacity:.95;animation:shock 1.7s cubic-bezier(.15,.7,.3,1) forwards}
   @keyframes shock{to{transform:translate(-50%,-50%) scale(3.4);opacity:0}}
@@ -1504,23 +1525,61 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('.box'); if(!b||b.getAttribute('aria-checked')==='true') return;
   burstAt(b);
 },true);
+function novaSound(){
+  try{
+    if(!$('speak').checked) return;
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    const ac=novaSound.ac||(novaSound.ac=new AC()); if(ac.state==='suspended') ac.resume();
+    const t=ac.currentTime, out=ac.createGain(); out.gain.value=.5; out.connect(ac.destination);
+    // charge-up: rising shimmer
+    const up=ac.createOscillator(), ug=ac.createGain(); up.type='sine'; up.frequency.setValueAtTime(180,t); up.frequency.exponentialRampToValueAtTime(1400,t+.62);
+    ug.gain.setValueAtTime(.0001,t); ug.gain.exponentialRampToValueAtTime(.18,t+.55); ug.gain.exponentialRampToValueAtTime(.0001,t+.66); up.connect(ug).connect(out); up.start(t); up.stop(t+.7);
+    // boom: low thump
+    const th=ac.createOscillator(), tg=ac.createGain(); th.type='sine'; th.frequency.setValueAtTime(110,t+.62); th.frequency.exponentialRampToValueAtTime(38,t+1.3);
+    tg.gain.setValueAtTime(.0001,t+.6); tg.gain.exponentialRampToValueAtTime(.7,t+.64); tg.gain.exponentialRampToValueAtTime(.0001,t+1.5); th.connect(tg).connect(out); th.start(t+.6); th.stop(t+1.6);
+    // bright chord that rings out
+    [1046.5,1318.5,1568,2093].forEach((f,i)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type='triangle'; o.frequency.value=f; const s0=t+.64+i*.05;
+      g.gain.setValueAtTime(.0001,s0); g.gain.exponentialRampToValueAtTime(.12,s0+.03); g.gain.exponentialRampToValueAtTime(.0001,s0+2.6); o.connect(g).connect(out); o.start(s0); o.stop(s0+2.7); });
+  }catch(e){}
+}
 function fullCharge(){
   setCaption('Day fully charged ✦ Everything on today’s list is done.');
-  say('Day fully charged. Everything on today’s list is done, Courtney.');
-  try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+  let reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  if(reduce){ say('Day fully charged. Everything on today’s list is done, Courtney.'); return; }
+  novaSound();
   const r=$('core').getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, R=r.width/2;
-  document.body.classList.remove('supernova'); void document.body.offsetWidth; document.body.classList.add('supernova');
-  setTimeout(()=>document.body.classList.remove('supernova'),2000);
+  const add=(cls,css,life)=>{ const el=document.createElement('div'); el.className=cls; Object.assign(el.style,css||{}); document.body.appendChild(el); setTimeout(()=>el.remove(),life); return el; };
   const pt=(x,y)=>({getBoundingClientRect:()=>({left:x,top:y,width:0,height:0})});
-  [0,380].forEach((delay,w)=>setTimeout(()=>{
-    const ring=document.createElement('span'); ring.className='shock'; ring.style.left=cx+'px'; ring.style.top=cy+'px'; ring.style.width=ring.style.height=(R*2)+'px';
-    document.body.appendChild(ring); setTimeout(()=>ring.remove(),1800);
-  },delay));
-  burstAt(pt(cx,cy));
-  for(let wave=0;wave<3;wave++){
-    const n=wave===1?10:12, rad=R*(1.05+wave*.45), off=wave*Math.PI/n;
-    for(let k=0;k<n;k++){ const a=off+k/n*Math.PI*2; setTimeout(()=>burstAt(pt(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad)),220+wave*330+k*45); }
-  }
+  const B=document.body.classList;
+  // 1. charge-up: the room dims, the core pulls in
+  add('nova-dim',{},4400);
+  B.remove('supernova','novacharge','quake'); void document.body.offsetWidth; B.add('novacharge');
+  // 2. BOOM at 0.62s
+  setTimeout(()=>{
+    B.remove('novacharge'); B.add('supernova','quake');
+    setTimeout(()=>B.remove('quake'),650); setTimeout(()=>B.remove('supernova'),2200);
+    add('nova-flash',{background:`radial-gradient(circle at ${cx}px ${cy}px, rgba(255,255,255,.95), rgba(190,245,255,.65) 12%, rgba(126,232,255,.25) 32%, rgba(10,20,50,0) 70%)`},1200);
+    add('nova-rays',{left:cx+'px',top:cy+'px',width:(R*7)+'px',height:(R*7)+'px'},3000);
+    [0,220,460].forEach(d=>setTimeout(()=>add('shock',{left:cx+'px',top:cy+'px',width:(R*2)+'px',height:(R*2)+'px'},1900),d));
+    megaBurst(cx,cy,R);
+    for(let wave=0;wave<3;wave++){ const n=wave===1?10:12, rad=R*(1.05+wave*.45), off=wave*Math.PI/n;
+      for(let k=0;k<n;k++){ const a=off+k/n*Math.PI*2; setTimeout(()=>burstAt(pt(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad)),260+wave*300+k*40); } }
+  },620);
+  // 3. the banner
+  setTimeout(()=>{ const bn=add('nova-banner',{},3600); bn.innerHTML='<small>Day</small><b>Fully charged</b><i>✦ everything on today’s list is done ✦</i>'; },900);
+  // 4. stars fall for a while after
+  setTimeout(()=>{ for(let k=0;k<44;k++){ const st=add('nova-fall',{},6200); const cols=['#7ee8ff','#a597ff','#ffffff','#ffb46b'];
+    st.style.left=(Math.random()*100)+'vw'; st.style.setProperty('--dx',((Math.random()-.5)*120).toFixed(0)+'px'); st.style.setProperty('--c',cols[k%4]);
+    st.style.animationDuration=(2.6+Math.random()*2.2).toFixed(2)+'s'; st.style.animationDelay=(Math.random()*1.4).toFixed(2)+'s'; const sz=5+Math.random()*7; st.style.width=st.style.height=sz.toFixed(1)+'px'; } },1100);
+  setTimeout(()=>say('Day fully charged. Everything on today’s list is done, Courtney.'),1500);
+}
+function megaBurst(cx,cy,R){
+  const wrap=document.createElement('span'); wrap.className='burst mega'; wrap.style.left=cx+'px'; wrap.style.top=cy+'px';
+  const cols=['#7ee8ff','#a597ff','#ffffff','#ffb46b','#ffffff'];
+  for(let k=0;k<72;k++){ const i=document.createElement('i'); if(k%3===0) i.className='star'; const a=Math.random()*Math.PI*2, d=R*1.2+Math.random()*R*4.2, sc=1+Math.random()*1.4;
+    i.style.setProperty('--x',(Math.cos(a)*d).toFixed(1)+'px'); i.style.setProperty('--y',(Math.sin(a)*d).toFixed(1)+'px'); i.style.setProperty('--c',cols[k%cols.length]);
+    i.style.width=i.style.height=(6*sc).toFixed(1)+'px'; i.style.animationDuration=(1.8+Math.random()*1.1).toFixed(2)+'s'; i.style.animationDelay=(Math.random()*.12).toFixed(2)+'s'; wrap.appendChild(i); }
+  document.body.appendChild(wrap); setTimeout(()=>wrap.remove(),3300);
 }
 function burstAt(el){
   try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}

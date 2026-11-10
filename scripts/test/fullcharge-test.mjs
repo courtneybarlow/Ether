@@ -16,10 +16,10 @@ await p.fill('#ether-login input[name=email]', 'c@x.com'); await p.fill('#ether-
 await p.waitForTimeout(2500);
 const before = await p.evaluate(() => ({ pct: document.getElementById('core-pct').textContent, hint: document.getElementById('core-hint').textContent }));
 await p.evaluate(() => document.querySelector('.box[aria-checked="false"][data-id]')?.click());
-await p.waitForTimeout(1100);
-const mid = await p.evaluate(() => ({ pct: document.getElementById('core-pct').textContent, nova: document.body.classList.contains('supernova'), bursts: document.querySelectorAll('.burst').length, shocks: document.querySelectorAll('.shock').length, caption: document.getElementById('caption').textContent }));
+await p.waitForTimeout(1900);
+const mid = await p.evaluate(() => ({ pct: document.getElementById('core-pct').textContent, nova: document.body.classList.contains('supernova'), bursts: document.querySelectorAll('.burst').length, shocks: document.querySelectorAll('.shock').length, banner: !!document.querySelector('.nova-banner'), rays: !!document.querySelector('.nova-rays'), falling: document.querySelectorAll('.nova-fall').length, caption: document.getElementById('caption').textContent }));
 await p.screenshot({ path: OUT + '/fullcharge.png' });
-await p.waitForTimeout(2500);
-const after = await p.evaluate(() => ({ full: document.body.classList.contains('fullcharge'), sub: document.getElementById('core-sub').textContent, left: document.querySelectorAll('.burst,.shock').length, flag: localStorage.getItem('ether-full-' + new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date())) }));
+await p.waitForTimeout(6500);
+const after = await p.evaluate(() => ({ full: document.body.classList.contains('fullcharge'), sub: document.getElementById('core-sub').textContent, left: document.querySelectorAll('.burst,.shock,.nova-dim,.nova-flash,.nova-rays,.nova-banner,.nova-fall').length, flag: localStorage.getItem('ether-full-' + new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date())) }));
 console.log(JSON.stringify({ before, mid, after, errs }));
 await b.close(); srv.close();
