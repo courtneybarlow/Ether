@@ -409,6 +409,19 @@ body.thinking .core-svg .nucleus{opacity:.55}
 .syms li{font-size:12.5px;color:var(--dim);display:flex;flex-wrap:wrap;gap:4px 10px}
 .syms b{color:var(--ink);font-weight:500}
 .cycle.discreet .cyc-body{display:none}
+.cyc-hh{margin:18px 0 2px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--ice)}
+.cyc-hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:10px}
+.cyc-card{border:1px solid var(--edge);border-radius:12px;padding:10px 12px;background:linear-gradient(180deg,rgba(14,22,44,.6),rgba(8,13,26,.6))}
+.cyc-card.now{border-color:rgba(126,232,255,.45);box-shadow:0 0 18px rgba(126,232,255,.12)}
+.cyc-card header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.cyc-card header b{font-family:var(--f-display);font-weight:400;font-size:16px;color:var(--ink)}
+.cyc-card header>span{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.cyc-card ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.cyc-card li{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+.cyc-card li span:last-child{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cyc-card li i{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.ph-m{--c:#ff8fa3}.ph-f{--c:#7ee8ff}.ph-o{--c:#ffb46b}.ph-l{--c:#a597ff}
+
 
 /* Analytics */
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;height:160px;padding-top:10px}
@@ -1632,6 +1645,18 @@ function cycleCalc(ref){
 function shortDate(s){const p=s.split('-').map(Number);return MON[p[1]-1].slice(0,3)+' '+p[2];}
 function rangeTxt(a,b){return a===b?shortDate(a):shortDate(a)+'–'+(a.slice(0,7)===b.slice(0,7)?b.split('-').map(Number)[2]:shortDate(b));}
 function periodDays(c,day){ if(!c) return false; const inCur=diffDays(c.last,day)>=0&&diffDays(c.last,day)<c.periodLen; const inNext=diffDays(c.next,day)>=0&&diffDays(c.next,day)<c.periodLen; return inCur?'period':inNext?'period (est.)':false; }
+function cycleHistory(c){
+  if(!c||!c.starts.length) return '';
+  const pl=c.periodLen, out=[], seen={};
+  c.starts.forEach((st,i)=>{
+    const cur=i===c.starts.length-1, nx=cur?c.next:c.starts[i+1], len=diffDays(st,nx);
+    const ovS=addDays(nx,-15), ovE=addDays(nx,-13), mEnd=addDays(st,Math.min(pl,len)-1);
+    const ph=[['Menstrual','m',st,mEnd],['Follicular','f',addDays(mEnd,1),addDays(ovS,-1)],['Ovulatory','o',ovS,ovE],['Luteal','l',addDays(ovE,1),addDays(nx,-1)]].filter(x=>x[2]<=x[3]);
+    const p=st.split('-').map(Number), key=p[0]+'-'+p[1]; seen[key]=(seen[key]||0)+1;
+    out.push({cur,st,len,ph,title:MON[p[1]-1]+(p[0]!==Number(TODAY.slice(0,4))?' '+p[0]:''),nth:seen[key]});
+  });
+  return `<h3 class="cyc-hh">Past cycles</h3><p class="cyc-est">Period dates are what you logged. Ovulation is estimated about two weeks before the next period, so the follicular, ovulatory and luteal dates are estimates.</p><div class="cyc-hist">`+out.reverse().map(x=>`<article class="cyc-card${x.cur?' now':''}"><header><b>${x.nth>1?'Late ':''}${esc(x.title)}</b><span>${x.cur?'Now · day '+c.day:x.len+' days'}</span></header><ul>${x.ph.map(([n,k,a,b])=>`<li class="ph-${k}"><i aria-hidden="true"></i><span>${n}${x.cur&&k!=='m'?' (est.)':''}</span><span>${rangeTxt(a,b)}</span></li>`).join('')}</ul></article>`).join('')+`</div>`;
+}
 function renderCycle(){
   const body=$('cyc-body');
   const discreet=store.get('ether-cyc-hide')==='1';
@@ -1654,7 +1679,7 @@ function renderCycle(){
       <div class="frow"><label for="sym-help">What I tried</label><input type="text" id="sym-help" placeholder="Heating pad, ibuprofen, rest…"><label for="sym-helped">Helped?</label><select id="sym-helped"><option value="">—</option><option>Yes</option><option>A little</option><option>No</option></select></div>
       <p class="redflag" id="sym-flag" hidden>If pain is sudden, severe or one-sided, or comes with fainting, fever, vomiting or heavy bleeding, get medical care right away.</p>
       <div class="frow"><button type="button" class="btn" id="sym-save">Save symptom</button><button type="button" class="btn ghost" id="cyc-cancel">Cancel</button></div></div>`;
-  body.innerHTML=top+`<div class="cyc-acts"><button type="button" class="mini" id="cyc-start">Period started</button><button type="button" class="mini" id="cyc-sym">Log symptom</button></div>`+form+(recent?`<ul class="syms">${recent}</ul>`:'');
+  body.innerHTML=top+`<div class="cyc-acts"><button type="button" class="mini" id="cyc-start">Period started</button><button type="button" class="mini" id="cyc-sym">Log symptom</button></div>`+form+(recent?`<ul class="syms">${recent}</ul>`:'')+cycleHistory(c);
 }
 async function addPeriodStart(date){
   if(!db||!uid||!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;

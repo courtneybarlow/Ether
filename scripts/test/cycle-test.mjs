@@ -1,0 +1,20 @@
+// Cycle panel: past cycles as month blocks with four phase date ranges.
+import { createRequire } from 'node:module';
+import { start } from './server.mjs';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const OUT = process.env.OUT || '.';
+const srv = await start(5189);
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1180, height: 1000 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.addInitScript(() => { window.__SEED = [{ path: 'data/users/u1/cycle', data: { starts: ['2026-06-18', '2026-07-13', '2026-08-09', '2026-09-03', '2026-09-28', '2026-10-26'], periodLen: 6 } }]; });
+await p.goto('http://localhost:5189/');
+await p.fill('#ether-login input[name=email]', 'c@x.com'); await p.fill('#ether-login input[name=password]', 'pw'); await p.click('#ether-login button');
+await p.waitForTimeout(2500);
+await p.evaluate(() => window.etherHooks.openDrawer('cycle'));
+await p.waitForTimeout(800);
+await p.evaluate(() => document.querySelector('.cyc-hh')?.scrollIntoView());
+await p.waitForTimeout(300);
+await p.screenshot({ path: OUT + '/cycle.png' });
+const cards = await p.$$eval('.cyc-card', cs => cs.map(c => c.innerText.replace(/\n+/g, ' | ')));
+console.log(JSON.stringify({ cards, errs }, null, 1));
+await b.close(); srv.close();
