@@ -94,9 +94,9 @@ input:focus,textarea:focus{outline:2px solid var(--ice);outline-offset:1px;borde
 .loading{display:grid;place-items:center;min-height:300px;color:var(--dim);font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
 .foot{margin-top:28px;text-align:center;font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint)}
 .burst{position:fixed;width:0;height:0;pointer-events:none;z-index:50}
-.burst i{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);animation:pop .8s cubic-bezier(.2,.7,.3,1) forwards}
+.burst i{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);animation:pop 1.7s cubic-bezier(.2,.7,.3,1) forwards}
 .burst i.star{width:9px;height:9px;left:-4px;top:-4px;border-radius:1px;transform:rotate(45deg)}
-@keyframes pop{0%{transform:translate(0,0) scale(.4);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1);opacity:0}}
+@keyframes pop{0%{transform:translate(0,0) scale(.4);opacity:1}35%{transform:translate(calc(var(--x)*.85),calc(var(--y)*.85)) scale(1.15);opacity:1}70%{opacity:.85}100%{transform:translate(var(--x),var(--y)) scale(.9);opacity:0}}
 @media (prefers-reduced-motion:no-preference){
   .spin-a{transform-origin:50% 50%;animation:spin 40s linear infinite}
   .spin-b{transform-origin:50% 50%;animation:spin 60s linear infinite reverse}
@@ -270,7 +270,7 @@ input:focus,textarea:focus{outline:2px solid var(--ice);outline-offset:1px;borde
     const w = document.createElement('span'); w.className = 'burst'; w.style.left = x + 'px'; w.style.top = y + 'px';
     const cols = ['#7ee8ff', '#a597ff', '#ffffff', '#ffb46b'];
     for (let k = 0; k < 28; k++) { const i = document.createElement('i'); if (k % 3 === 0) i.className = 'star'; const a = Math.random() * Math.PI * 2, d = 40 + Math.random() * 70; i.style.setProperty('--x', (Math.cos(a) * d).toFixed(1) + 'px'); i.style.setProperty('--y', (Math.sin(a) * d).toFixed(1) + 'px'); i.style.setProperty('--c', cols[k % 4]); i.style.animationDelay = (Math.random() * .1).toFixed(2) + 's'; w.appendChild(i); }
-    document.body.appendChild(w); setTimeout(() => w.remove(), 1100);
+    document.body.appendChild(w); setTimeout(() => w.remove(), 1900);
   }
   /* drifting particle field */
   (function field() {
