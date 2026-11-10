@@ -4,3 +4,6 @@ node_modules/
 !.env.example
 .vercel/
 scripts/test/*.wav
+
+# Test screenshots written when the shots folder is not set
+undefined/
