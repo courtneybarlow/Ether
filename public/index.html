@@ -109,6 +109,31 @@ button.chip[aria-pressed="true"]{border-color:var(--ice);color:var(--ice)}
 .tl-ticks{position:absolute;left:0;right:0;top:50px;height:14px}
 .tl-ticks span{position:absolute;transform:translateX(-50%);font-family:var(--f-mono);font-size:10px;color:var(--faint)}
 .tl-empty{position:absolute;left:0;right:0;top:14px;line-height:30px;text-align:center;font-size:12px;color:var(--faint)}
+.tlwrap{position:relative}
+.timeline{cursor:copy}
+.tl-ev{cursor:pointer}
+.tlwrap:has(#tl-pop) .tl-ev::after{display:none}
+.tl-ghost{position:absolute;z-index:5;top:14px;height:30px;width:2px;margin-left:-1px;background:rgba(126,232,255,.7);box-shadow:0 0 10px var(--ice-glow);pointer-events:none;border-radius:1px}
+.tl-ghost b{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--f-mono);font-size:10px;font-weight:400;letter-spacing:.06em;color:var(--ice);background:rgba(8,13,26,.92);border:1px solid var(--edge-2);border-radius:6px;padding:2px 6px}
+.tl-pop{position:absolute;z-index:40;top:84px;width:min(340px,calc(100vw - 32px));padding:14px 14px 12px;border:1px solid rgba(126,232,255,.4);border-radius:16px;background:radial-gradient(120% 80% at 50% 0%,rgba(165,151,255,.14),transparent 60%),linear-gradient(180deg,rgba(14,22,44,.98),rgba(8,13,26,.98));box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 30px rgba(126,232,255,.15);display:grid;gap:10px;animation:tlpop .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes tlpop{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+.tl-pop::before{content:"";position:absolute;top:-6px;left:var(--ax,50%);width:10px;height:10px;margin-left:-5px;transform:rotate(45deg);background:rgba(14,22,44,.98);border-left:1px solid rgba(126,232,255,.4);border-top:1px solid rgba(126,232,255,.4)}
+.tlp-h{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ice)}
+.tl-pop input{font:15px var(--f-body);color:var(--ink);background:var(--deep);border:1px solid var(--edge-2);border-radius:8px;padding:8px 10px;min-width:0}
+.tl-pop input:focus{outline:2px solid var(--ice);outline-offset:0}
+.tlp-title{width:100%}
+.tlp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tlp-row label:first-child{grid-column:1/-1}
+.tlp-row label{display:grid;gap:3px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.tlp-row input{font-size:14px;padding:7px 8px;color-scheme:dark;width:100%}
+.tlp-quick{display:flex;flex-wrap:wrap;gap:6px}
+.tlp-quick button.on{border-color:var(--ice);color:var(--ice)}
+.tlp-msg{margin:0;font-size:12.5px;color:#ffb46b;min-height:0}
+.tlp-msg:empty{display:none}
+.tlp-note{margin:0;font-size:13px;color:var(--dim);line-height:1.45}
+.tlp-acts{display:flex;align-items:center;gap:8px}
+.tlp-acts .tlp-del{margin-left:auto}
+.tlp-del.arm{border-color:#ff8fa3;color:#ff8fa3}
 .tl-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 6px}
 .tl-foot .linkbtn{margin:0}
 
@@ -1724,7 +1749,7 @@ function evStart(e){ return e.start&&e.start.dateTime?new Date(e.start.dateTime)
 function evEnd(e){ return e.end&&e.end.dateTime?new Date(e.end.dateTime):(e.end&&e.end.date?new Date(e.end.date+'T00:00:00'):null); }
 function allEvents(){
   const out=[];
-  for(const c of cals){ for(const e of (calMap[c.id]||[])){ if(e.status==='cancelled') continue; const s=evStart(e), en=evEnd(e); if(!s) continue; const span=!!(e.start&&e.start.dateTime)&&en&&(en-s)>=12*3600000; out.push({id:e.id,title:e.summary||'(No title)',start:s,end:en||s,allDay:!(e.start&&e.start.dateTime)||span,span,cal:calLabel(c)}); } }
+  for(const c of cals){ for(const e of (calMap[c.id]||[])){ if(e.status==='cancelled') continue; const s=evStart(e), en=evEnd(e); if(!s) continue; const span=!!(e.start&&e.start.dateTime)&&en&&(en-s)>=12*3600000; out.push({id:e.id,title:e.summary||'(No title)',start:s,end:en||s,allDay:!(e.start&&e.start.dateTime)||span,span,cal:calLabel(c),calId:c.id,gid:e.gid||null,gcal:e.gcal||null,editable:!!(e.editable&&e.gid)}); } }
   return out.sort((a,b)=>a.start-b.start);
 }
 function eventsOn(day){ return allEvents().filter(e=>{ if(e.allDay){ const s=ymd(e.start), en=ymd(e.end); return s<=day && (en>day || s===day); } return ymd(e.start)===day; }); }
@@ -1787,6 +1812,111 @@ function renderNextUp(){
   el.hidden=false;
   el.innerHTML=next.start<=now?`<strong>Now:</strong> ${esc(next.title)}`:`<strong>Next:</strong> ${esc(next.title)} · ${hm(next.start)}`;
 }
+/* ---------- Timeline: tap to add, tap an event to change it (syncs to Google Calendar) ---------- */
+const TL0=7, TL1=23;
+let tlp=null;
+const tlMin=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const tlHM=d=>tlMin(d.getHours()*60+d.getMinutes());
+function tlMinutesAt(x){ const r=$('timeline').querySelector('.tl-in').getBoundingClientRect(); const f=Math.max(0,Math.min(1,(x-r.left)/r.width)); return Math.max(TL0*60,Math.min(TL1*60-15,Math.round((TL0*60+f*(TL1-TL0)*60)/15)*15)); }
+function tlTarget(){ const c=cals.find(x=>x.writable); return c?{calId:c.id,gcal:c.google}:{calId:null,gcal:'primary'}; }
+function tlClose(){ const el=$('tl-pop'); if(el) el.remove(); tlp=null; }
+function tlOpen(x,opts){
+  tlClose(); tlp=opts;
+  const wrap=$('timeline').parentElement, wr=wrap.getBoundingClientRect(), w=Math.min(340,innerWidth-32);
+  const left=Math.max(0,Math.min(wr.width-w,x-wr.left-w/2));
+  const el=document.createElement('div'); el.className='tl-pop'; el.id='tl-pop'; el.setAttribute('role','dialog');
+  el.style.left=left+'px'; el.style.setProperty('--ax',Math.max(16,Math.min(w-16,x-wr.left-left))+'px');
+  const ev=opts.ev;
+  if(ev&&!ev.editable){
+    el.setAttribute('aria-label','Event');
+    el.innerHTML=`<div class="tlp-h">${esc(hm(ev.start))}–${esc(hm(ev.end))}</div><b style="font-weight:500">${esc(ev.title)}</b><p class="tlp-note">This one is on your ${esc(ev.cal||'other')} calendar, which Ether can only read. Change it in that calendar's app.</p><div class="tlp-acts"><button type="button" class="btn ghost" id="tlp-cancel">Close</button></div>`;
+  }else{
+    const day=ev?ymd(ev.start):(opts.day||TODAY), s=ev?tlHM(ev.start):tlMin(opts.min), e=ev?tlHM(ev.end):tlMin(Math.min(24*60-15,opts.min+60));
+    el.setAttribute('aria-label',ev?'Change event':'New event');
+    el.innerHTML=`<div class="tlp-h">${ev?'Change event':'New event'}</div>
+      <input class="tlp-title" id="tlp-title" placeholder="What is it?" maxlength="200" value="${ev?esc(ev.title):''}" aria-label="Title">
+      <div class="tlp-row"><label>Day<input type="date" id="tlp-day" value="${day}"></label><label>From<input type="time" id="tlp-s" step="900" value="${s}"></label><label>To<input type="time" id="tlp-e" step="900" value="${e}"></label></div>
+      ${ev?'':`<div class="tlp-quick" role="group" aria-label="Length">${[[30,'30 min'],[60,'1 hr'],[90,'1.5 hr'],[120,'2 hr']].map(([m,t])=>`<button type="button" class="mini${m===60?' on':''}" data-len="${m}">${t}</button>`).join('')}</div>`}
+      <p class="tlp-msg" id="tlp-msg"></p>
+      <div class="tlp-acts"><button type="button" class="btn" id="tlp-save">${ev?'Save':'Add to calendar'}</button><button type="button" class="btn ghost" id="tlp-cancel">Cancel</button>${ev?'<button type="button" class="mini tlp-del" id="tlp-del">Remove</button>':''}</div>`;
+  }
+  wrap.appendChild(el);
+  const t=$('tlp-title'); if(t&&!ev) setTimeout(()=>t.focus(),30);
+}
+async function tlRefresh(calId){
+  const c=cals.find(x=>x.id===calId); if(!c||!mcp) return;
+  try{ const r=await mcp.callTool('Google Calendar','list_events',{calendarId:c.id,...calRange()}); const p=r.payload; if(p&&Array.isArray(p.events)){ calMap[c.id]=p.events; renderCalendarBits(); renderHud(); } }catch(e){}
+}
+async function tlSave(){
+  const msg=$('tlp-msg'), btn=$('tlp-save'); if(!tlp||!btn) return;
+  const title=$('tlp-title').value.trim(), day=$('tlp-day').value, s=$('tlp-s').value, e=$('tlp-e').value;
+  if(!title){ msg.textContent='Give it a title.'; $('tlp-title').focus(); return; }
+  if(!day||!s||!e){ msg.textContent='Pick a day and times.'; return; }
+  const start=new Date(day+'T'+s+':00'), end=new Date(day+'T'+e+':00');
+  if(!(end>start)){ msg.textContent='The end time needs to be after the start.'; return; }
+  const ev=tlp.ev, tgt=ev?{calId:ev.calId,gcal:ev.gcal}:tlTarget();
+  btn.disabled=true; btn.textContent=ev?'Saving…':'Adding…'; msg.textContent='';
+  try{
+    const args={calendarId:tgt.gcal,summary:title,start:start.toISOString(),end:end.toISOString()};
+    if(ev) args.eventId=ev.gid;
+    const r=await mcp.callTool('Google Calendar',ev?'update_event':'create_event',args);
+    const out=r&&r.payload;
+    if(tgt.calId&&out&&out.gid){ const list=(calMap[tgt.calId]||[]).filter(x=>x.gid!==out.gid); list.push(out); calMap[tgt.calId]=list; renderCalendarBits(); renderHud(); }
+    const b=btn.getBoundingClientRect(); burstAt({getBoundingClientRect:()=>({left:b.left,top:b.top,width:b.width,height:b.height})});
+    tlClose();
+    setCaption(`${ev?'Updated':'Added'} “${title}” · ${day===TODAY?'today':shortDate(day)} ${hm(start)}–${hm(end)}. It’s on your Google Calendar.`);
+    if(tgt.calId) setTimeout(()=>tlRefresh(tgt.calId),1500);
+  }catch(err){
+    btn.disabled=false; btn.textContent=ev?'Save':'Add to calendar';
+    msg.textContent=err&&err.code==='google_not_linked'?'Connect Google Calendar in Settings first.':((err&&err.message)||'Couldn’t reach Google Calendar. Try again.');
+  }
+}
+async function tlDelete(){
+  const d=$('tlp-del'); if(!tlp||!tlp.ev||!d) return;
+  if(!d.classList.contains('arm')){ d.classList.add('arm'); d.textContent='Tap again to remove'; return; }
+  const ev=tlp.ev; d.disabled=true; d.textContent='Removing…';
+  try{
+    await mcp.callTool('Google Calendar','delete_event',{calendarId:ev.gcal,eventId:ev.gid});
+    calMap[ev.calId]=(calMap[ev.calId]||[]).filter(x=>x.gid!==ev.gid); renderCalendarBits(); renderHud();
+    tlClose(); setCaption(`Removed “${ev.title}” from your calendar.`);
+  }catch(err){ d.disabled=false; d.textContent='Remove'; $('tlp-msg').textContent=(err&&err.message)||'Couldn’t remove it. Try again.'; }
+}
+$('timeline').addEventListener('click',e=>{
+  if(!cals.length) return;
+  const b=e.target.closest('.tl-ev');
+  if(b){ const ev=allEvents().find(x=>x.id===b.dataset.eid&&x.calId===b.dataset.ecal); if(ev) tlOpen(e.clientX,{ev}); return; }
+  tlOpen(e.clientX,{min:tlMinutesAt(e.clientX),day:TODAY});
+});
+$('timeline').parentElement.addEventListener('click',e=>{
+  if(e.target.closest('#tlp-cancel')){ tlClose(); return; }
+  if(e.target.closest('#tlp-save')){ tlSave(); return; }
+  if(e.target.closest('#tlp-del')){ tlDelete(); return; }
+  const q=e.target.closest('[data-len]');
+  if(q){ const [h,m]=$('tlp-s').value.split(':').map(Number), t=Math.min(24*60-15,h*60+m+Number(q.dataset.len)); $('tlp-e').value=tlMin(t); q.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===q)); }
+});
+$('timeline').parentElement.addEventListener('keydown',e=>{
+  if(!$('tl-pop')) return;
+  if(e.key==='Escape'){ e.stopPropagation(); tlClose(); }
+  else if(e.key==='Enter'&&e.target.tagName==='INPUT'){ e.preventDefault(); tlSave(); }
+});
+$('timeline').parentElement.addEventListener('change',e=>{
+  if(e.target.id!=='tlp-s'||!tlp||tlp.ev) return;
+  const on=document.querySelector('.tlp-quick .on'), len=on?Number(on.dataset.len):60, [h,m]=e.target.value.split(':').map(Number);
+  if(!isNaN(h)) $('tlp-e').value=tlMin(Math.min(24*60-15,h*60+m+len));
+});
+document.addEventListener('pointerdown',e=>{ if(tlp&&!e.target.closest('#tl-pop')&&!e.target.closest('#timeline')) tlClose(); },true);
+(function ghost(){
+  if(!matchMedia('(hover:hover)').matches) return;
+  const wrap=$('timeline').parentElement; let g=null;
+  $('timeline').addEventListener('pointermove',e=>{
+    if(!cals.length||e.target.closest('.tl-ev')||$('tl-pop')){ if(g){ g.remove(); g=null; } return; }
+    if(!g){ g=document.createElement('span'); g.className='tl-ghost'; g.innerHTML='<b></b>'; wrap.appendChild(g); }
+    const m=tlMinutesAt(e.clientX), d=new Date(); d.setHours(Math.floor(m/60),m%60,0,0);
+    const tr=$('timeline').getBoundingClientRect(), wr=wrap.getBoundingClientRect(), ir=$('timeline').querySelector('.tl-in').getBoundingClientRect();
+    g.style.left=(ir.left-wr.left+(m-TL0*60)/((TL1-TL0)*60)*ir.width)+'px'; g.style.top=(tr.top-wr.top+14)+'px'; g.firstChild.textContent='+ '+hm(d);
+  });
+  $('timeline').addEventListener('pointerleave',()=>{ if(g){ g.remove(); g=null; } });
+})();
 function renderCalendarBits(){ renderSchedule(); renderNextUp(); renderWeek(); renderEffort(); renderHabits(); renderSlow(); if(document.body.classList.contains('night')) renderNight(); }
 setInterval(()=>{ if(cals.length){ renderSchedule(); renderNextUp(); } },60000);
 
@@ -2100,7 +2230,7 @@ function renderHud(){
   tl+='</div>';
   if(wkday) tl+=`<span class="tl-work-l" style="left:calc(${(9-T0)/span*100}% + 6px)">9-to-5</span>`;
   if(!evToday.length) tl+=`<span class="tl-empty">${cals.length?'Nothing on the calendar today':'Connecting your calendar…'}</span>`;
-  evToday.forEach(e=>{ const l=pos(e.start), r=pos(e.end); if(r<=0||l>=100) return; const w=Math.max(1.4,r-l); tl+=`<button type="button" class="tl-ev${e.end<now?' past':''}" style="left:${l}%;width:${w}%" data-tip="${esc(hm(e.start)+'–'+hm(e.end)+' · '+e.title)}" aria-label="${esc(hm(e.start)+' '+e.title)}">${w*tlW/100>=78?esc(e.title):''}</button>`; });
+  evToday.forEach(e=>{ const l=pos(e.start), r=pos(e.end); if(r<=0||l>=100) return; const w=Math.max(1.4,r-l); tl+=`<button type="button" class="tl-ev${e.end<now?' past':''}" data-eid="${esc(e.id)}" data-ecal="${esc(e.calId)}" style="left:${l}%;width:${w}%" data-tip="${esc(hm(e.start)+'–'+hm(e.end)+' · '+e.title)}" aria-label="${esc(hm(e.start)+' '+e.title)}">${w*tlW/100>=78?esc(e.title):''}</button>`; });
   const nh=now.getHours()+now.getMinutes()/60; if(nh>=T0&&nh<=T1) tl+=`<span class="tl-now" style="left:${pos(now)}%"></span>`;
   tl+='<div class="tl-ticks">'+[8,10,12,14,16,18,20,22].map(hh=>`<span style="left:${(hh-T0)/span*100}%">${hh>12?hh-12:hh}${hh>=12?'p':'a'}</span>`).join('')+'</div></div>';
   $('timeline').innerHTML=tl;

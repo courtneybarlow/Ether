@@ -11,8 +11,18 @@ export default handle(async (req, res) => {
   const { server, tool, args = {} } = body(req);
   let out;
   if (server === 'Google Calendar' || server === 'Calendar') {
-    if (tool === 'list_calendars') out = await listCalendars();
-    else if (tool === 'list_events') out = await listEvents(args);
+    if (tool === 'list_calendars') out = await listCalendars(user.id);
+    else if (tool === 'list_events') out = await listEvents(args, user.id);
+    else if (['create_event', 'update_event', 'delete_event'].includes(tool)) {
+      if (!(await google.linked(user.id))) throw new HttpError(409, 'google_not_linked', 'Connect Google Calendar in Settings first');
+      const a = { calendarId: String(args.calendarId || 'primary'), eventId: args.eventId && String(args.eventId), summary: args.summary == null ? undefined : String(args.summary).slice(0, 200), start: args.start, end: args.end };
+      if (a.start && isNaN(new Date(a.start))) throw new HttpError(400, 'bad_time');
+      if (a.end && isNaN(new Date(a.end))) throw new HttpError(400, 'bad_time');
+      if (a.start && a.end && new Date(a.end) <= new Date(a.start)) throw new HttpError(400, 'bad_time', 'End time needs to be after the start');
+      if (tool !== 'create_event' && !a.eventId) throw new HttpError(400, 'need_event');
+      if (tool === 'create_event' && (!a.summary || !a.start || !a.end)) throw new HttpError(400, 'need_fields', 'Add a title, start and end');
+      out = tool === 'create_event' ? await google.createEvent(user.id, a) : tool === 'update_event' ? await google.updateEvent(user.id, a) : await google.deleteEvent(user.id, a);
+    }
   } else if (server === 'Shopify') {
     if (tool === 'list-orders') out = await listOrders(args);
   } else if (server === 'Spotify') {

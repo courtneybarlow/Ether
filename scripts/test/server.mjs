@@ -8,6 +8,8 @@ const root = new URL('../../public/', import.meta.url).pathname;
 const ics = readFileSync(new URL('./sample.ics', import.meta.url), 'utf8');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.wasm': 'application/wasm', '.onnx': 'application/octet-stream' };
 export const log = [];
+// Live Google mode for the timeline editing test: events kept in memory like Google would.
+export const liveCal = { on: false, events: [], n: 0 };
 const readBody = req => new Promise(r => { let b = ''; req.on('data', c => b += c); req.on('end', () => { try { r(JSON.parse(b || '{}')); } catch (e) { r({}); } }); });
 const json = (res, s, o) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
 export function start(port = 5179) {
@@ -23,6 +25,14 @@ export function start(port = 5179) {
         if (last.content.some(c => c.type === 'tool_result') && !/"t2"/.test(JSON.stringify(b.messages))) return json(res, 200, { stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 't2', name: 'spotify_play', input: { uri: 'spotify:track:abc' } }] });
         return json(res, 200, { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ reply: /play/i.test(userAsk) ? 'Playing Golden Hour on your iPad.' : 'Added it for tomorrow.', add: /play/i.test(userAsk) ? [] : [{ title: 'Test task from voice', area: 'life', due: null, priority: 'p1', mins: 15 }] }) }] }); }
       if (url.pathname === '/api/tools') { const b = await readBody(req); log.push(['tools', b.server, b.tool, b.args]);
+        if (liveCal.on && b.server === 'Google Calendar') {
+          const a = b.args || {};
+          if (b.tool === 'list_calendars') return json(res, 200, { calendars: [{ id: 'cal0', summary: 'Personal', google: 'me@x.com', live: true, writable: true }] });
+          if (b.tool === 'list_events') return json(res, 200, { events: liveCal.events, live: true });
+          if (b.tool === 'create_event') { const e = { id: 'g' + (++liveCal.n), gid: 'g' + liveCal.n, gcal: a.calendarId, editable: true, summary: a.summary, status: 'confirmed', start: { dateTime: a.start }, end: { dateTime: a.end } }; liveCal.events.push(e); return json(res, 200, e); }
+          if (b.tool === 'update_event') { const e = liveCal.events.find(x => x.gid === a.eventId); if (!e) return json(res, 404, { error: 'gone', code: 'google_error' }); Object.assign(e, { summary: a.summary ?? e.summary, start: a.start ? { dateTime: a.start } : e.start, end: a.end ? { dateTime: a.end } : e.end }); return json(res, 200, e); }
+          if (b.tool === 'delete_event') { liveCal.events = liveCal.events.filter(x => x.gid !== a.eventId); return json(res, 200, { deleted: true }); }
+        }
         if (b.server === 'Google Calendar' && b.tool === 'list_calendars') return json(res, 200, { calendars: [{ id: 'cal0', summary: 'Personal' }] });
         if (b.server === 'Google Calendar' && b.tool === 'list_events') { const now = Date.now(); return json(res, 200, { events: expand(ics, new Date(now - 8 * 864e5), new Date(now + 9 * 864e5)) }); }
         if (b.server === 'Shopify') return json(res, 200, { totalCount: 2, orders: [{ name: '#1001', createdAt: new Date().toISOString(), totalPrice: '48.00', currencyCode: 'USD' }, { name: '#1002', createdAt: new Date().toISOString(), totalPrice: '30.00', currencyCode: 'USD' }] });
