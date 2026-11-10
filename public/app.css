@@ -22,3 +22,18 @@ body.listening #ask::placeholder { color: #7ee8ff; }
 .conn b { font-weight: 400; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .conn b.ok { color: #6be3a4; } .conn b.off { color: #8aa0c0; }
 button.playlink { border: 0; cursor: pointer; font-family: inherit; }
+
+/* New-booking popup */
+.bk-pop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(3,5,12,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .3s; }
+.bk-pop.on { opacity: 1; }
+.bk-card { width: min(460px, 100%); padding: 26px 26px 20px; border-radius: 24px; border: 1px solid rgba(126,232,255,.45); background: radial-gradient(120% 90% at 50% 0%, rgba(165,151,255,.18), transparent 60%), linear-gradient(180deg, rgba(14,22,44,.96), rgba(8,13,26,.96)); box-shadow: 0 0 60px rgba(126,232,255,.25), inset 0 0 40px rgba(126,232,255,.05); color: #e8f1ff; font-family: Jost, system-ui, sans-serif; text-align: center; transform: translateY(14px) scale(.96); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+.bk-pop.on .bk-card { transform: none; }
+.bk-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .26em; text-transform: uppercase; color: #7ee8ff; }
+.bk-card h2 { margin: 10px 0 6px; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 400; font-size: 30px; line-height: 1.15; }
+.bk-when { margin: 0; font-size: 18px; font-weight: 300; }
+.bk-sub { margin: 8px 0 0; color: #8aa0c0; font-size: 14px; line-height: 1.5; }
+.bk-cal { margin: 12px 0 0; font-size: 13px; color: #a597ff; }
+.bk-acts { margin-top: 18px; display: flex; justify-content: center; }
+.bk-ok { font: 600 15px Jost, system-ui, sans-serif; color: #021018; background: radial-gradient(circle at 35% 30%, #fff, #7ee8ff 55%, #3a6fd8); border: 0; border-radius: 999px; padding: 11px 26px; cursor: pointer; box-shadow: 0 0 22px rgba(126,232,255,.45); }
+
+.burst { z-index: 120 !important; }

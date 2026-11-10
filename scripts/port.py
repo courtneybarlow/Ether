@@ -149,7 +149,7 @@ rep('''        <p class="foot">Want a far more natural voice? On the iPad, go to
 rep('''<button type="button" class="mini" data-open="voice">Voice &amp; display</button>''', '''<button type="button" class="mini" data-open="voice">Settings</button>''')
 
 # ---------- hooks the app shell (app.js) uses ----------
-rep("scheduleHud();\n\n})();", "scheduleHud();\nwindow.etherHooks={stopSpeak,setCaption,speakSeq,openDrawer,runBriefing,say};\ndocument.dispatchEvent(new CustomEvent('ether-hooks'));\n})();")
+rep("scheduleHud();\n\n})();", "scheduleHud();\nwindow.etherHooks={stopSpeak,setCaption,speakSeq,openDrawer,runBriefing,say,burstAt};\ndocument.dispatchEvent(new CustomEvent('ether-hooks'));\n})();")
 
 pathlib.Path('public/index.html').write_text(s)
 print('wrote public/index.html', len(s), 'bytes')

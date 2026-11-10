@@ -2112,7 +2112,7 @@ renderSchedule=(f=>function(){ f.apply(this,arguments); scheduleHud(); })(render
 renderCycle=(f=>function(){ f.apply(this,arguments); scheduleHud(); })(renderCycle);
 if(!store.get('ether-briefed-'+TODAY)&&new Date().getHours()>=5&&new Date().getHours()<12) setCaption('Good morning, Courtney. Tap the core for your briefing.');
 scheduleHud();
-window.etherHooks={stopSpeak,setCaption,speakSeq,openDrawer,runBriefing,say};
+window.etherHooks={stopSpeak,setCaption,speakSeq,openDrawer,runBriefing,say,burstAt};
 document.dispatchEvent(new CustomEvent('ether-hooks'));
 })();
 </script>

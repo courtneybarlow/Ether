@@ -156,6 +156,44 @@
     } catch (err) { st.textContent = 'Import failed: ' + (err.message || err); }
   }
 
+  /* ---------- New-booking popup (starburst) ---------- */
+  const seenLocal = new Set();
+  let bkQueue = [], bkShowing = false;
+  function bookingWhen(b) { return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(b.start)).replace(' at ', ' · ').replace(/:00 /, ' '); }
+  function showBooking() {
+    if (bkShowing || !bkQueue.length) return;
+    bkShowing = true;
+    const b = bkQueue.shift();
+    const el = document.createElement('div');
+    el.className = 'bk-pop'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-label', 'New booking');
+    const esc = t => String(t || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    el.innerHTML = `<div class="bk-card"><span class="bk-label">New booking ✦</span><h2>${esc(b.name)} booked time with you</h2><p class="bk-when">${esc(bookingWhen(b))}</p><p class="bk-sub">${esc(b.title || 'Working session')}${b.topic ? ' · “' + esc(b.topic.slice(0, 140)) + (b.topic.length > 140 ? '…' : '') + '”' : ''}</p><p class="bk-cal">${b.calendar === 'google' ? 'On your Google Calendar with a Meet link.' : 'Not on your Google Calendar yet. Connect Google in Settings → Booking link and it’s added automatically.'}</p><div class="bk-acts"><button type="button" class="bk-ok">Got it</button></div></div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('on'));
+    const card = el.querySelector('.bk-card');
+    const fire = () => { if (H().burstAt) { const r = card.getBoundingClientRect(); const pts = [[.18, .1], [.5, 0], [.82, .1], [.08, .6], [.92, .6]]; pts.forEach(([x, y], i) => setTimeout(() => H().burstAt({ getBoundingClientRect: () => ({ left: r.left + r.width * x, top: r.top + r.height * y, width: 0, height: 0 }) }), i * 140)); } };
+    setTimeout(fire, 180);
+    window.etherChime && window.etherChime('up');
+    try { if (document.getElementById('speak') && document.getElementById('speak').checked && H().say) H().say(`New booking. ${b.name} booked time with you, ${bookingWhen(b)}.`); } catch (e) {}
+    el.querySelector('.bk-ok').addEventListener('click', async () => {
+      el.classList.remove('on'); setTimeout(() => el.remove(), 300);
+      try { const db = await window.claude.use('db'); await db.doc('bookings/' + b.id).update({ seenAt: new Date().toISOString() }); } catch (e) {}
+      bkShowing = false; setTimeout(showBooking, 350);
+    });
+  }
+  window.etherReady.then(async () => {
+    const db = await window.claude.use('db');
+    db.collection('bookings').onSnapshot(s => {
+      for (const d of s.docs) {
+        const b = { id: d.id, ...d.data() };
+        if (b.seenAt || b.status === 'cancelled' || seenLocal.has(b.id)) continue;
+        seenLocal.add(b.id); bkQueue.push(b);
+      }
+      bkQueue.sort((a, c) => String(a.createdAt).localeCompare(String(c.createdAt)));
+      showBooking();
+    }, () => {});
+  });
+
   /* ---------- Links back into the app ---------- */
   document.addEventListener('ether-hooks', () => {
     const q = new URLSearchParams(location.search);

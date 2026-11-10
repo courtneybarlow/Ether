@@ -1,0 +1,14 @@
+import { createRequire } from 'node:module';
+import { start } from './server.mjs';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const srv = await start(5186);
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1180, height: 820 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.addInitScript(() => { window.__SEED = [{ path: 'bookings/abc', data: { name: 'Nick', start: '2026-12-01T23:30:00.000Z', end: '2026-12-02T00:30:00.000Z', title: '60-minute working session', topic: 'Talk through the holiday campaign.', status: 'confirmed', calendar: 'pending', createdAt: '2026-11-10T19:08:38.984Z' } }]; });
+await p.goto('http://localhost:5186/');
+await p.fill('#ether-login input[name=email]', 'c@x.com'); await p.fill('#ether-login input[name=password]', 'pw'); await p.click('#ether-login button');
+await p.waitForSelector('.bk-pop.on', { timeout: 8000 }); await p.waitForTimeout(450);
+await p.screenshot({ path: process.env.OUT + '/popup.png' });
+await p.click('.bk-ok'); await p.waitForTimeout(800);
+console.log('seenAt set:', await p.evaluate(() => !!window.__rows.get('bookings/abc').data.seenAt), 'popup gone:', !(await p.$('.bk-pop')), errs);
+await b.close(); srv.close();
