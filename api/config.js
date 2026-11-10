@@ -13,7 +13,8 @@ export default handle(async (req, res) => {
       spotify: !!(env('SPOTIFY_CLIENT_ID') && env('SPOTIFY_CLIENT_SECRET')),
       shopify: !!(env('SHOPIFY_SHOP') && (env('SHOPIFY_ADMIN_TOKEN') || env('SHOPIFY_CLIENT_ID'))),
       calendar: !!env('CALENDAR_ICS'),
-      planable: !!env('PLANABLE_TOKEN')
+      planable: !!env('PLANABLE_TOKEN'),
+      google: !!(env('GOOGLE_CLIENT_ID') && env('GOOGLE_CLIENT_SECRET'))
     }
   });
 });

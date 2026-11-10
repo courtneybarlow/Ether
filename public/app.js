@@ -77,6 +77,9 @@
     if (!f.spotify) { $('sp-state').textContent = 'Not set up'; $('sp-state').className = 'off'; $('sp-link').hidden = true; }
     else tool('Spotify', 'status').then(r => { $('sp-state').textContent = r.linked ? 'Linked' : 'Not linked'; $('sp-state').className = r.linked ? 'ok' : 'off'; $('sp-link').textContent = r.linked ? 'Re-link Spotify' : 'Link Spotify'; }).catch(() => { $('sp-state').textContent = 'Not linked'; });
     window.claude.use('user').then(u => u.email()).then(e => { $('acct-email').textContent = e || ''; });
+    $('bk-url').value = location.origin + '/book';
+    if (!f.google) { $('bk-state').textContent = 'Google not set up'; $('bk-google').hidden = true; }
+    else tool('Google', 'status').then(r => { $('bk-state').textContent = r.linked ? 'Adds to Google Calendar' : 'Calendar not connected'; $('bk-google').textContent = r.linked ? 'Reconnect Google Calendar' : 'Connect Google Calendar'; }).catch(() => {});
   }
   window.etherRenderSettings = renderSettings;
 
@@ -124,6 +127,8 @@
     if (e.target.closest('#notif-test')) { try { const r = await api('/api/push?op=test', { method: 'POST', json: {} }); $('notif-foot').textContent = r.sent ? `Sent to ${r.sent} device${r.sent === 1 ? '' : 's'}.` : 'No devices are turned on yet.'; } catch (err) { $('notif-foot').textContent = 'Test failed: ' + err.message; } }
     if (e.target.closest('#sp-link')) { try { const r = await tool('Spotify', 'login-url'); location.href = r.url; } catch (err) { H().setCaption && H().setCaption('Spotify isn’t set up on the server yet.'); } }
     if (e.target.closest('#sign-out')) window.etherSignOut();
+    if (e.target.closest('#bk-copy')) { const u = $('bk-url').value; try { await navigator.clipboard.writeText(u); $('bk-copy').textContent = 'Copied ✓'; } catch (x) { $('bk-url').select(); document.execCommand && document.execCommand('copy'); $('bk-copy').textContent = 'Copied ✓'; } setTimeout(() => { $('bk-copy').textContent = 'Copy link'; }, 1800); }
+    if (e.target.closest('#bk-google')) { try { const r = await tool('Google', 'login-url'); location.href = r.url; } catch (err) { H().setCaption && H().setCaption('Google Calendar isn’t set up on the server yet.'); } }
     const pl = e.target.closest('[data-spplay]');
     if (pl) {
       pl.disabled = true;
@@ -155,6 +160,7 @@
   document.addEventListener('ether-hooks', () => {
     const q = new URLSearchParams(location.search);
     if (q.get('spotify')) H().setCaption(q.get('spotify') === 'linked' ? 'Spotify is linked. Ask me to play anything.' : 'Spotify wasn’t linked. You can try again in Settings.');
+    if (q.get('google')) H().setCaption(q.get('google') === 'linked' ? 'Google Calendar is connected. New bookings land there with a Meet link.' : 'Google Calendar wasn’t connected. You can try again in Settings.');
     if (q.get('open')) setTimeout(() => H().openDrawer(q.get('open')), 400);
     if (q.toString()) history.replaceState(null, '', '/');
   });

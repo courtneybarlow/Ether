@@ -135,6 +135,12 @@ rep('''        <p class="foot">Want a far more natural voice? On the iPad, go to
         <ul class="conn" id="conn"></ul>
         <div class="row"><button type="button" class="btn" id="sp-link">Link Spotify</button></div>
       </section>
+      <section class="panel" aria-labelledby="bookl-h">
+        <div class="ph"><h2 id="bookl-h">Booking link</h2><span class="label" id="bk-state"></span></div>
+        <p class="foot" style="margin-top:0">Send this to anyone who should book a 60-minute working session with you. They only see open times: weekday evenings 5:30–7:30 and Saturdays 10–2, minus anything on your calendar.</p>
+        <div class="row"><input id="bk-url" readonly style="flex:1;min-width:0"><button type="button" class="btn" id="bk-copy">Copy link</button></div>
+        <div class="row"><button type="button" class="btn ghost" id="bk-google">Connect Google Calendar</button><a class="btn ghost" href="/book" target="_blank" rel="noopener">Preview page</a></div>
+      </section>
       <section class="panel" aria-labelledby="acct-h">
         <div class="ph"><h2 id="acct-h">Account</h2><span class="label" id="acct-email"></span></div>
         <div class="row"><label class="btn ghost" for="import-file" style="cursor:pointer">Import from the Claude version</label><input type="file" id="import-file" accept="application/json,.json" hidden><button type="button" class="btn ghost" id="sign-out">Sign out</button></div>

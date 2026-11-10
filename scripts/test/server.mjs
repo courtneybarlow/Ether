@@ -3,6 +3,7 @@ import http from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { expand } from '../../lib/calendar.js';
+import { computeDays, DEFAULTS } from '../../lib/booking.js';
 const root = new URL('../../public/', import.meta.url).pathname;
 const ics = readFileSync(new URL('./sample.ics', import.meta.url), 'utf8');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.wasm': 'application/wasm', '.onnx': 'application/octet-stream' };
@@ -29,6 +30,8 @@ export function start(port = 5179) {
         if (b.server === 'Spotify' && b.tool === 'play') return json(res, 200, { ok: true, device: 'Courtney’s iPad' });
         if (b.server === 'Spotify' && b.tool === 'status') return json(res, 200, { linked: false });
         return json(res, 404, { error: 'nope', code: 'not_in_manifest' }); }
+      if (url.pathname === '/api/book' && req.method === 'GET') return json(res, 200, { owner: 'Courtney', tz: 'America/Chicago', title: DEFAULTS.title, minutes: 60, days: computeDays(DEFAULTS, [{ s: new Date(Date.now() + 864e5), e: new Date(Date.now() + 864e5 + 36e5) }]) });
+      if (url.pathname === '/api/book' && req.method === 'POST') { const b = await readBody(req); log.push(['book', b]); return json(res, 200, { id: 'abc123', start: b.start, end: new Date(new Date(b.start).getTime() + 36e5).toISOString(), title: DEFAULTS.title, owner: 'Courtney', meet: 'https://meet.google.com/abc-defg-hij', invited: true }); }
       if (url.pathname === '/api/transcribe') { const b = await readBody(req); log.push(['transcribe', (b.audio || '').length, b.mime]); return json(res, 200, { text: 'remind me to water the plants' }); }
       if (url.pathname === '/api/tts') return json(res, 503, { error: 'off', code: 'voice_not_configured' });
       if (url.pathname.startsWith('/api/')) return json(res, 404, { error: 'not in test server' });
