@@ -206,7 +206,9 @@ body.focusing .cmd{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .seg.on.must{stroke:#fff}
 .deco{fill:none;stroke:rgba(126,232,255,.22);stroke-dasharray:2 7}
 .deco2{fill:none;stroke:rgba(165,151,255,.25);stroke-dasharray:18 10 2 10}
-.nucleus{transition:opacity .6s}
+.nucleus{transition:opacity .6s,filter .8s}
+body.fullcharge .core-svg .nucleus{filter:drop-shadow(0 0 22px rgba(255,255,255,.55)) drop-shadow(0 0 40px rgba(126,232,255,.5))}
+body.fullcharge .core-sub{color:#fff;text-shadow:0 0 12px var(--ice-glow)}
 .core-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:58%}
 .core-pct{font-family:var(--f-display);font-weight:200;font-size:clamp(26px,4vw,38px);letter-spacing:.04em;line-height:1;text-shadow:0 0 18px var(--ice-glow)}
 .core-sub{font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-top:6px}
@@ -495,6 +497,11 @@ body.night #night{display:grid;min-height:90vh;align-content:center;justify-item
   body.speaking .wave i:nth-child(2n){animation-delay:.15s} body.speaking .wave i:nth-child(3n){animation-delay:.3s} body.speaking .wave i:nth-child(5n){animation-delay:.45s}
   body.thinking .breath{animation-duration:1.4s}
   body.levelup .core-svg{animation:lvl 1.2s ease-out}
+  body.supernova .core-svg{animation:nova 1.9s cubic-bezier(.2,.8,.2,1)}
+  @keyframes nova{0%{transform:scale(1);filter:none}16%{transform:scale(1.2);filter:drop-shadow(0 0 50px #fff) brightness(1.7)}42%{transform:scale(.95);filter:drop-shadow(0 0 34px var(--ice)) brightness(1.2)}100%{transform:scale(1);filter:none}}
+  .shock{position:fixed;z-index:59;pointer-events:none;border-radius:50%;border:2px solid var(--ice);box-shadow:0 0 30px var(--ice),inset 0 0 24px rgba(126,232,255,.45);transform:translate(-50%,-50%) scale(.4);opacity:.95;animation:shock 1.7s cubic-bezier(.15,.7,.3,1) forwards}
+  @keyframes shock{to{transform:translate(-50%,-50%) scale(3.4);opacity:0}}
+  body.fullcharge .breath{animation-duration:3s}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes breath{0%,100%{opacity:.75;transform:scale(.97)}50%{opacity:1;transform:scale(1.03)}}
   @keyframes wv{0%,100%{height:20%}50%{height:100%}}
@@ -554,7 +561,7 @@ body.night #night{display:grid;min-height:90vh;align-content:center;justify-item
             <g id="rings"></g>
             <g class="breath"><circle class="nucleus" id="nucleus" cx="150" cy="150" r="58" fill="url(#nuc)"/></g>
           </svg>
-          <span class="core-label"><span class="core-pct" id="core-pct">0%</span><span class="core-sub" id="core-sub" style="display:block">Charged</span><span class="core-hint" id="core-hint" style="display:block">Tap to brief</span></span>
+          <span class="core-label"><span class="core-pct" id="core-pct">0%</span><span class="core-sub" id="core-sub" style="display:block">Charged</span><span class="core-hint" id="core-hint" style="display:block"></span></span>
           <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         </button>
     </div>
@@ -1497,6 +1504,24 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('.box'); if(!b||b.getAttribute('aria-checked')==='true') return;
   burstAt(b);
 },true);
+function fullCharge(){
+  setCaption('Day fully charged ✦ Everything on today’s list is done.');
+  say('Day fully charged. Everything on today’s list is done, Courtney.');
+  try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+  const r=$('core').getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, R=r.width/2;
+  document.body.classList.remove('supernova'); void document.body.offsetWidth; document.body.classList.add('supernova');
+  setTimeout(()=>document.body.classList.remove('supernova'),2000);
+  const pt=(x,y)=>({getBoundingClientRect:()=>({left:x,top:y,width:0,height:0})});
+  [0,380].forEach((delay,w)=>setTimeout(()=>{
+    const ring=document.createElement('span'); ring.className='shock'; ring.style.left=cx+'px'; ring.style.top=cy+'px'; ring.style.width=ring.style.height=(R*2)+'px';
+    document.body.appendChild(ring); setTimeout(()=>ring.remove(),1800);
+  },delay));
+  burstAt(pt(cx,cy));
+  for(let wave=0;wave<3;wave++){
+    const n=wave===1?10:12, rad=R*(1.05+wave*.45), off=wave*Math.PI/n;
+    for(let k=0;k<n;k++){ const a=off+k/n*Math.PI*2; setTimeout(()=>burstAt(pt(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad)),220+wave*330+k*45); }
+  }
+}
 function burstAt(el){
   try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
   const r=el.getBoundingClientRect(), wrap=document.createElement('span'); wrap.className='burst';
@@ -1764,13 +1789,13 @@ function stopSpeak(){
   speakToken++; clearTimeout(speakTimer);
   try{ speechSynthesis.cancel(); }catch(e){}
   try{ window.EtherVoice&&EtherVoice.stop(); }catch(e){}
-  document.body.classList.remove('speaking'); $('core-hint').textContent='Tap to brief';
+  document.body.classList.remove('speaking'); $('core-hint').textContent='';
 }
 function speakSeq(lines,{caption=true}={}){
   stopSpeak();
   const token=++speakToken; let i=0;
   document.body.classList.add('speaking'); $('core-hint').textContent='Tap to stop';
-  const done=()=>{ if(token!==speakToken) return; document.body.classList.remove('speaking'); $('core-hint').textContent='Tap to brief'; document.dispatchEvent(new CustomEvent('ether-spoke')); };
+  const done=()=>{ if(token!==speakToken) return; document.body.classList.remove('speaking'); $('core-hint').textContent=''; document.dispatchEvent(new CustomEvent('ether-spoke')); };
   if(window.EtherWake&&EtherWake.enabled) EtherWake.pause();
   const next=()=>{
     if(token!==speakToken) return;
@@ -1961,8 +1986,10 @@ function renderHud(){
   const pct=all.length?Math.round(all.filter(x=>x.done).length/all.length*100):0;
   $('core-pct').textContent=pct+'%';
   $('core-sub').textContent=pct>=100?'Fully charged':'Day charged';
+  document.body.classList.toggle('fullcharge',pct>=100);
+  if(pct>=100&&all.length&&!store.get('ether-full-'+TODAY)){ store.set('ether-full-'+TODAY,'1'); setTimeout(fullCharge,450); }
   const h=new Date().getHours();
-  if(!document.body.classList.contains('speaking')) $('core-hint').textContent=(!store.get('ether-briefed-'+TODAY)&&h>=5&&h<12)?'Tap for your briefing':'Tap to brief';
+  if(!document.body.classList.contains('speaking')) $('core-hint').textContent='';
   $('nucleus').setAttribute('r',String(48+Math.round(pct/100*14)));
   /* Today */
   const now=new Date(), wkday=dow(TODAY)>=1&&dow(TODAY)<=5;

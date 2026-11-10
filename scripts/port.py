@@ -45,8 +45,8 @@ rep('''function stopSpeak(){
   speakToken++; clearTimeout(speakTimer);
   try{ speechSynthesis.cancel(); }catch(e){}
   try{ window.EtherVoice&&EtherVoice.stop(); }catch(e){}''')
-rep('''  const done=()=>{ if(token!==speakToken) return; document.body.classList.remove('speaking'); $('core-hint').textContent='Tap to brief'; };''',
-'''  const done=()=>{ if(token!==speakToken) return; document.body.classList.remove('speaking'); $('core-hint').textContent='Tap to brief'; document.dispatchEvent(new CustomEvent('ether-spoke')); };
+rep('''  const done=()=>{ if(token!==speakToken) return; document.body.classList.remove('speaking'); $('core-hint').textContent=''; };''',
+'''  const done=()=>{ if(token!==speakToken) return; document.body.classList.remove('speaking'); $('core-hint').textContent=''; document.dispatchEvent(new CustomEvent('ether-spoke')); };
   if(window.EtherWake&&EtherWake.enabled) EtherWake.pause();''')
 rep('''    const fallback=()=>{ if(token===speakToken) speakTimer=setTimeout(next,Math.max(2000,line.length*55)); };
     try{''', '''    const fallback=()=>{ if(token===speakToken) speakTimer=setTimeout(next,Math.max(2000,line.length*55)); };
